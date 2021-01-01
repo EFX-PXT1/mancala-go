@@ -10,7 +10,7 @@ import (
 const WIDTH = 6
 
 // STONE is the initial number per hole
-const STONE = 4
+const STONE = 10
 
 // Side represent one players side
 type Side struct {
@@ -111,27 +111,37 @@ func (p *Position) add(delta *Position) (pos *Position) {
 	return
 }
 
-func (p *Position) setHole(start int, count int, value int) {
-	loop := 0
+func (p *Position) setHole(start int, count int, value int) (skip bool) {
+	row := 0
 	for count > 0 {
 		offset := start - count
 		if offset >= 0 {
-			// found the correct loop
-			p.Row[loop%2].Items[offset] = value
-			return
+			// found the correct row
+			if offset == 0 && row%2 == 1 {
+				// skip
+				return true
+			}
+			// single round loop function
+			p.Row[row%2].Items[offset] = value
+			return false
 		}
 		count = count - start // reduce count
-		loop++                // on to next loop
-		start = WIDTH + 1     // start of row
+		row++                 // on to next row
+		start = WIDTH + 1     // +1 for zero index
 	}
+	return false
 }
 
 func deltaPosition(h int, count int) (p *Position) {
 	p = ZeroPosition()
 	p.near().Items[h] = -count
 	for i := 1; count > 0; i, count = i+1, count-1 {
-		p.setHole(h, i, 1)
+		if skip := p.setHole(h, i, 1); skip {
+			// we need to adjust our loop counters
+			count = count + 1
+		}
 	}
+	p.Show()
 	return
 }
 
