@@ -48,9 +48,13 @@ mconsole --width <width> --stones <start stones> ...moves`,
 			x, args = args[0], args[1:]
 			if hole, err := strconv.Atoi(x); err == nil {
 				var delta *game.Position
-				if pos, delta, _, err = pos.Move(hole); err == nil {
+				var mr game.MoveResult
+				if pos, delta, mr, err = pos.Move(hole); err == nil {
 					if viper.GetBool("show.delta") {
 						delta.Show()
+					}
+					if mr == game.EndOfTurn {
+						pos = pos.ChangePlayer()
 					}
 					pos.Show()
 				} else {
@@ -72,9 +76,13 @@ mconsole --width <width> --stones <start stones> ...moves`,
 				}
 				if hole, err := strconv.Atoi(x); err == nil {
 					var delta *game.Position
-					if pos, delta, _, err = pos.Move(hole); err == nil {
+					var mr game.MoveResult
+					if pos, delta, mr, err = pos.Move(hole); err == nil {
 						if viper.GetBool("show.delta") {
 							delta.Show()
+						}
+						if mr == game.EndOfTurn {
+							pos = pos.ChangePlayer()
 						}
 						pos.Show()
 					} else {
