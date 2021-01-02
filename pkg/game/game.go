@@ -103,23 +103,23 @@ const (
 )
 
 // Move creates a new position given a players move
-func (p *Position) Move(hole int) (*Position, MoveResult, error) {
+func (p *Position) Move(hole int) (*Position, *Position, MoveResult, error) {
 	// validate in range
 	if hole < 1 || hole > WIDTH() {
-		return p, BadMove, errors.New("hole not in range")
+		return p, nil, BadMove, errors.New("hole not in range")
 	}
 
 	// validate hole has stones
 	stones := p.near().Items[hole]
 	if stones == 0 {
-		return p, BadMove, errors.New("invalid move")
+		return p, nil, BadMove, errors.New("invalid move")
 	}
 
 	// create delta position
-	d, lastRow, lastHole := deltaPosition(hole, stones)
+	delta, lastRow, lastHole := deltaPosition(hole, stones)
 
 	// combine
-	result := p.add(d)
+	result := p.add(delta)
 
 	// determina result from last position
 	moveResult := EndOfTurn
@@ -133,7 +133,7 @@ func (p *Position) Move(hole int) (*Position, MoveResult, error) {
 		// todo
 	}
 
-	return result, moveResult, nil
+	return result, delta, moveResult, nil
 }
 
 func (p *Position) isSteal(row int, hole int) bool {
@@ -188,7 +188,6 @@ func deltaPosition(h int, count int) (p *Position, row int, hole int) {
 			count = count + 1
 		}
 	}
-	p.Show()
 	return
 }
 
