@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -16,6 +19,7 @@ var cfgFile string
 
 var width int
 var stones int
+var repl bool
 var showDelta bool
 
 // rootCmd represents the base command when called without any subcommands
@@ -38,6 +42,7 @@ mconsole --width <width> --stones <start stones> ...moves`,
 		pos := game.StartPosition()
 		pos.Show()
 
+		// process arg turns
 		var x string
 		for len(args) > 0 {
 			x, args = args[0], args[1:]
@@ -54,6 +59,30 @@ mconsole --width <width> --stones <start stones> ...moves`,
 			}
 		}
 
+		// enter repl
+		if viper.GetBool("repl") {
+			reader := bufio.NewReader(os.Stdin)
+			for {
+				x, _ = reader.ReadString('\n')
+				switch runtime.GOOS {
+				case "windows":
+					x = strings.TrimRight(x, "\r\n")
+				default:
+					x = strings.TrimRight(x, "\n")
+				}
+				if hole, err := strconv.Atoi(x); err == nil {
+					var delta *game.Position
+					if pos, delta, _, err = pos.Move(hole); err == nil {
+						if viper.GetBool("show.delta") {
+							delta.Show()
+						}
+						pos.Show()
+					} else {
+						fmt.Printf(" %s %s\n---\n", x, err)
+					}
+				}
+			}
+		}
 	},
 }
 
@@ -78,10 +107,12 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().IntVarP(&width, "width", "w", 6, "width of board")
 	rootCmd.Flags().IntVarP(&stones, "stones", "s", 4, "intial number of stones")
+	rootCmd.Flags().BoolVarP(&repl, "repl", "r", false, "enter REPL")
 	rootCmd.Flags().BoolVar(&showDelta, "delta", false, "show delta position")
 
 	viper.BindPFlag("game.width", rootCmd.Flags().Lookup("width"))
 	viper.BindPFlag("game.stones", rootCmd.Flags().Lookup("stones"))
+	viper.BindPFlag("repl", rootCmd.Flags().Lookup("repl"))
 	viper.BindPFlag("show.delta", rootCmd.Flags().Lookup("delta"))
 }
 
