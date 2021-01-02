@@ -60,6 +60,10 @@ mconsole --width <width> --stones <start stones> ...moves`,
 				} else {
 					fmt.Printf(" %s %s\n---\n", x, err)
 				}
+				if mr == game.EndOfGame {
+					fmt.Printf("*** Game Over ***\n")
+					return
+				}
 			}
 		}
 
@@ -87,6 +91,10 @@ mconsole --width <width> --stones <start stones> ...moves`,
 						pos.Show()
 					} else {
 						fmt.Printf(" %s %s\n---\n", x, err)
+					}
+					if mr == game.EndOfGame {
+						fmt.Printf("*** Game Over ***\n")
+						return
 					}
 				}
 			}

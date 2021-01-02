@@ -100,6 +100,8 @@ const (
 	EndOfTurn MoveResult = 0
 	// RepeatTurn for same player
 	RepeatTurn MoveResult = 1
+	// EndOfGame when all done
+	EndOfGame MoveResult = 2
 )
 
 // Move creates a new position given a players move
@@ -117,7 +119,7 @@ func (p *Position) Move(hole int) (*Position, *Position, MoveResult, error) {
 
 	// create delta position
 	delta, lastRow, lastHole := deltaPosition(hole, stones)
-
+	// fmt.Printf("deltaPosition lastRow:%d, lastHole:%d\n", lastRow, lastHole)
 	// combine
 	result := p.add(delta)
 
@@ -128,16 +130,44 @@ func (p *Position) Move(hole int) (*Position, *Position, MoveResult, error) {
 	}
 
 	// check for steal
-	// need some steel processing
-	if p.isSteal(lastRow, lastHole) {
-		// todo
+	if isSteal, opRow, opHole, opCount := result.IsSteal(lastRow, lastHole); isSteal {
+		// create steal position
+		steal := stealPosition(lastRow, lastHole, opRow, opHole, opCount)
+		// apply
+		result = result.add(steal)
+	}
+
+	if result.IsGameEnd() {
+		moveResult = EndOfGame
 	}
 
 	return result, delta, moveResult, nil
 }
 
-func (p *Position) isSteal(row int, hole int) bool {
-	return false
+// IsGameEnd checks for end of game
+func (p *Position) IsGameEnd() bool {
+	// end of game if all near holes zero
+	sum := 0
+	for _, v := range p.near().holes() {
+		sum += v
+	}
+	return sum == 0
+}
+
+// IsSteal determines if last position is a steal
+func (p *Position) IsSteal(row int, hole int) (steal bool, opRow int, opHole int, opCount int) {
+	if hole == 0 {
+		return
+	}
+	// check if last position resulted in a single stone
+	// and opposite isn't empty
+	opRow = (row + 1) % 2
+	opHole = 7 - hole
+	opCount = p.Row[opRow].Items[opHole]
+	if opCount > 0 && p.Row[row].Items[hole] == 1 {
+		steal = true
+	}
+	return
 }
 
 func (p *Position) add(delta *Position) (pos *Position) {
@@ -175,6 +205,19 @@ func (p *Position) setHole(start int, count int, value int) (skip bool, row int,
 	return false, row % 2, count
 }
 
+// ChangePlayer create a new position from other perspective
+func (p *Position) ChangePlayer() (s *Position) {
+	bar0 := make([]int, WIDTH()+1)
+	bar1 := make([]int, WIDTH()+1)
+	copy(bar0, p.far().Items)
+	copy(bar1, p.near().Items)
+
+	s = &Position{}
+	s.Row[0] = Side{Items: bar0}
+	s.Row[1] = Side{Items: bar1}
+	return
+}
+
 // deltaPosition creates a position with each hole
 // having the change of stones required
 // it return the final row and hole populated
@@ -188,6 +231,17 @@ func deltaPosition(h int, count int) (p *Position, row int, hole int) {
 			count = count + 1
 		}
 	}
+	return
+}
+
+// stealPosition creates a position with each hole
+// have the change of stones required
+// for a steal
+func stealPosition(r int, h int, opRow int, opHole int, opCount int) (p *Position) {
+	p = ZeroPosition()
+	p.Row[opRow].Items[opHole] = -opCount
+	p.Row[r].Items[h] = -1
+	p.near().Items[0] = opCount + 1
 	return
 }
 
