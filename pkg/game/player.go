@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -51,12 +50,7 @@ func (p *ConsolePlayer) Move(pos *Position) int {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		x, _ := reader.ReadString('\n')
-		switch runtime.GOOS {
-		case "windows":
-			x = strings.TrimRight(x, "\r\n")
-		default:
-			x = strings.TrimRight(x, "\n")
-		}
+		x = strings.TrimRight(x, "\r\n")
 		if hole, err := strconv.Atoi(x); err == nil {
 			// check value is valid
 			for _, m := range moves {

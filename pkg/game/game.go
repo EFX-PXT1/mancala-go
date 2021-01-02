@@ -48,10 +48,29 @@ type Position struct {
 	Row [2]Side // 0 is near, 1 is far
 }
 
+// CreatePosition creates and initialise a position
+// values supplied are used - with zero being default
+func CreatePosition(vals ...int) (p *Position) {
+	bar0 := make([]int, WIDTH()+1)
+	bar1 := make([]int, WIDTH()+1)
+	p = &Position{}
+	p.Row[0] = Side{Items: bar0}
+	p.Row[1] = Side{Items: bar1}
+	for i, v := range vals {
+		r := i / (WIDTH() + 1)
+		c := i % (WIDTH() + 1)
+		p.Row[r%2].Items[c] = v
+		fmt.Printf("%d => (%d, %d)\n", i, r, c)
+	}
+	return
+}
+
+// near is a convenience helper
 func (p *Position) near() *Side {
 	return &p.Row[0]
 }
 
+// far is a convenience helper
 func (p *Position) far() *Side {
 	return &p.Row[1]
 }
@@ -80,6 +99,21 @@ func (p *Position) Show() {
 	fmt.Printf("%2d %s %2d\n", p.far().home(), strings.Repeat(" ", padding), p.near().home())
 	fmt.Printf("  %s\n", near)
 	fmt.Println(strings.Repeat("-", padding+6))
+}
+
+// IsValid confirm there is no corruption
+func (p *Position) IsValid() (bool, int) {
+	// Check a position is valid, specifically
+	// that the sum of stones is correct
+	correct := STONE() * WIDTH() * 2
+	sum := 0
+	for _, v := range p.near().Items {
+		sum += v
+	}
+	for _, v := range p.far().Items {
+		sum += v
+	}
+	return sum == correct, correct - sum
 }
 
 // ValidMoves returns an array of all valid moves
@@ -177,7 +211,7 @@ func (p *Position) IsSteal(row int, hole int) (steal bool, opRow int, opHole int
 	// check if last position resulted in a single stone
 	// and opposite isn't empty
 	opRow = (row + 1) % 2
-	opHole = 7 - hole
+	opHole = WIDTH() + 1 - hole
 	opCount = p.Row[opRow].Items[opHole]
 	if opCount > 0 && p.Row[row].Items[hole] == 1 {
 		steal = true
@@ -185,6 +219,7 @@ func (p *Position) IsSteal(row int, hole int) (steal bool, opRow int, opHole int
 	return
 }
 
+// add one position to another
 func (p *Position) add(delta *Position) (pos *Position) {
 	pos = ZeroPosition()
 	for row := 0; row < 2; row++ {
@@ -196,10 +231,10 @@ func (p *Position) add(delta *Position) (pos *Position) {
 	return
 }
 
-// setHole computes the correct offset on the correct row
+// addHole computes the correct offset on the correct row
 // from the starting hole and step count.
 // if the computed hole is the opponent home, skip is returned
-func (p *Position) setHole(start int, count int, value int) (skip bool, row int, offset int) {
+func (p *Position) addHole(start int, count int, value int) (skip bool, row int, offset int) {
 	row = 0
 	for count > 0 {
 		offset := start - count
@@ -209,8 +244,8 @@ func (p *Position) setHole(start int, count int, value int) (skip bool, row int,
 				// skip
 				return true, 1, 0
 			}
-			// single round loop function
-			p.Row[row%2].Items[offset] = value
+			// add value to existing value
+			p.Row[row%2].Items[offset] = p.Row[row%2].Items[offset] + value
 			return false, row % 2, offset
 		}
 		count = count - start // reduce count
@@ -241,7 +276,7 @@ func deltaPosition(h int, count int) (p *Position, row int, hole int) {
 	p.near().Items[h] = -count
 	for i := 1; count > 0; i, count = i+1, count-1 {
 		var skip bool
-		if skip, row, hole = p.setHole(h, i, 1); skip {
+		if skip, row, hole = p.addHole(h, i, 1); skip {
 			// we need to adjust our loop counters
 			count = count + 1
 		}
@@ -250,8 +285,7 @@ func deltaPosition(h int, count int) (p *Position, row int, hole int) {
 }
 
 // stealPosition creates a position with each hole
-// have the change of stones required
-// for a steal
+// having the change of stones required for a steal
 func stealPosition(r int, h int, opRow int, opHole int, opCount int) (p *Position) {
 	p = ZeroPosition()
 	p.Row[opRow].Items[opHole] = -opCount

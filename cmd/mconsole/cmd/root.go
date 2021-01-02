@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -46,6 +45,9 @@ mconsole --width <width> --stones <start stones> ...moves`,
 		pos := game.StartPosition()
 		pos.Show()
 
+		// record history for diagnostics
+		history := make([]string, 0)
+
 		// process arg turns
 		var x string
 		for len(args) > 0 {
@@ -54,6 +56,7 @@ mconsole --width <width> --stones <start stones> ...moves`,
 				var delta *game.Position
 				var mr game.MoveResult
 				if pos, delta, mr, err = pos.Move(hole); err == nil {
+					history = append(history, strconv.Itoa(hole))
 					fmt.Printf("args > %d\n", hole)
 					if viper.GetBool("show.delta") {
 						delta.Show()
@@ -62,6 +65,11 @@ mconsole --width <width> --stones <start stones> ...moves`,
 						pos = pos.ChangePlayer()
 					}
 					pos.Show()
+					if valid, delta := pos.IsValid(); !valid {
+						fmt.Fprintf(os.Stderr, "POSITION CORRUPT BY LAST MOVE [%d]\n", delta)
+						fmt.Fprintf(os.Stderr, "%s\n", strings.Join(history, " "))
+						return
+					}
 				} else {
 					fmt.Printf(" %s %s\n---\n", x, err)
 				}
@@ -77,16 +85,12 @@ mconsole --width <width> --stones <start stones> ...moves`,
 			reader := bufio.NewReader(os.Stdin)
 			for {
 				x, _ = reader.ReadString('\n')
-				switch runtime.GOOS {
-				case "windows":
-					x = strings.TrimRight(x, "\r\n")
-				default:
-					x = strings.TrimRight(x, "\n")
-				}
+				x = strings.TrimRight(x, "\r\n")
 				if hole, err := strconv.Atoi(x); err == nil {
 					var delta *game.Position
 					var mr game.MoveResult
 					if pos, delta, mr, err = pos.Move(hole); err == nil {
+						history = append(history, strconv.Itoa(hole))
 						if viper.GetBool("show.delta") {
 							delta.Show()
 						}
@@ -94,6 +98,11 @@ mconsole --width <width> --stones <start stones> ...moves`,
 							pos = pos.ChangePlayer()
 						}
 						pos.Show()
+						if valid, delta := pos.IsValid(); !valid {
+							fmt.Fprintf(os.Stderr, "POSITION CORRUPT BY LAST MOVE [%d]\n", delta)
+							fmt.Fprintf(os.Stderr, "%s\n", strings.Join(history, " "))
+							return
+						}
 					} else {
 						fmt.Printf(" %s %s\n---\n", x, err)
 					}
@@ -121,6 +130,7 @@ mconsole --width <width> --stones <start stones> ...moves`,
 				var delta *game.Position
 				var mr game.MoveResult
 				if pos, delta, mr, err = pos.Move(hole); err == nil {
+					history = append(history, strconv.Itoa(hole))
 					if viper.GetBool("show.delta") {
 						delta.Show()
 					}
@@ -128,6 +138,11 @@ mconsole --width <width> --stones <start stones> ...moves`,
 						pos = pos.ChangePlayer()
 					}
 					pos.Show()
+					if valid, delta := pos.IsValid(); !valid {
+						fmt.Fprintf(os.Stderr, "POSITION CORRUPT BY LAST MOVE [%d]\n", delta)
+						fmt.Fprintf(os.Stderr, "%s\n", strings.Join(history, " "))
+						return
+					}
 				} else {
 					fmt.Printf(" %s %s\n---\n", x, err)
 				}
