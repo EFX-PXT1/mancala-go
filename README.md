@@ -48,4 +48,15 @@ If your last stone lands in an empty hole and opposite a hole
 which is occupied, you gain your single stone and _all_ the opposite stones.
 Your turn is over with a steal.
 
+### players
+
+As an alternative to repl mode, you can specify a player type with a *-t*.
+Players of various types will be developed but currently we have
+
+* console - input is needed just like repl
+* random - a valid random hole is chosen.
+
+Thus we start to have the games played automatically.
+
+Any moves on the command line are still played first.
 

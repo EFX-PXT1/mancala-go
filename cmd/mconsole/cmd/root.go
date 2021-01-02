@@ -3,10 +3,12 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -21,6 +23,8 @@ var width int
 var stones int
 var repl bool
 var showDelta bool
+var playerType string
+var playerName string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -50,6 +54,7 @@ mconsole --width <width> --stones <start stones> ...moves`,
 				var delta *game.Position
 				var mr game.MoveResult
 				if pos, delta, mr, err = pos.Move(hole); err == nil {
+					fmt.Printf("args > %d\n", hole)
 					if viper.GetBool("show.delta") {
 						delta.Show()
 					}
@@ -67,8 +72,8 @@ mconsole --width <width> --stones <start stones> ...moves`,
 			}
 		}
 
-		// enter repl
 		if viper.GetBool("repl") {
+			// enter repl
 			reader := bufio.NewReader(os.Stdin)
 			for {
 				x, _ = reader.ReadString('\n')
@@ -98,6 +103,39 @@ mconsole --width <width> --stones <start stones> ...moves`,
 					}
 				}
 			}
+		} else {
+			// seed rand
+			rand.Seed(time.Now().UTC().UnixNano())
+			// configure players
+			conf := map[string]string{
+				"type": viper.GetString("player.type"),
+				"name": viper.GetString("player.name"),
+			}
+			player, err := game.CreatePlayer(conf)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+				return
+			}
+			for {
+				hole := player.Move(pos)
+				var delta *game.Position
+				var mr game.MoveResult
+				if pos, delta, mr, err = pos.Move(hole); err == nil {
+					if viper.GetBool("show.delta") {
+						delta.Show()
+					}
+					if mr == game.EndOfTurn {
+						pos = pos.ChangePlayer()
+					}
+					pos.Show()
+				} else {
+					fmt.Printf(" %s %s\n---\n", x, err)
+				}
+				if mr == game.EndOfGame {
+					fmt.Printf("*** Game Over ***\n")
+					return
+				}
+			}
 		}
 	},
 }
@@ -125,11 +163,15 @@ func init() {
 	rootCmd.Flags().IntVarP(&stones, "stones", "s", 4, "intial number of stones")
 	rootCmd.Flags().BoolVarP(&repl, "repl", "r", false, "enter REPL")
 	rootCmd.Flags().BoolVar(&showDelta, "delta", false, "show delta position")
+	rootCmd.Flags().StringVarP(&playerType, "type", "t", "console", "player type")
+	rootCmd.Flags().StringVarP(&playerName, "name", "n", "console", "player name")
 
 	viper.BindPFlag("game.width", rootCmd.Flags().Lookup("width"))
 	viper.BindPFlag("game.stones", rootCmd.Flags().Lookup("stones"))
 	viper.BindPFlag("repl", rootCmd.Flags().Lookup("repl"))
 	viper.BindPFlag("show.delta", rootCmd.Flags().Lookup("delta"))
+	viper.BindPFlag("player.type", rootCmd.Flags().Lookup("type"))
+	viper.BindPFlag("player.name", rootCmd.Flags().Lookup("name"))
 }
 
 // initConfig reads in config file and ENV variables if set.

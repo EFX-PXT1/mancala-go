@@ -82,6 +82,17 @@ func (p *Position) Show() {
 	fmt.Println(strings.Repeat("-", padding+6))
 }
 
+// ValidMoves returns an array of all valid moves
+func (p *Position) ValidMoves() (holes []int) {
+	holes = make([]int, 0, WIDTH()-1)
+	for i := 1; i <= WIDTH(); i++ {
+		if p.near().Items[i] > 0 {
+			holes = append(holes, i)
+		}
+	}
+	return
+}
+
 // max finds largest of two ints
 func max(x, y int) int {
 	if x > y {
@@ -146,12 +157,16 @@ func (p *Position) Move(hole int) (*Position, *Position, MoveResult, error) {
 
 // IsGameEnd checks for end of game
 func (p *Position) IsGameEnd() bool {
-	// end of game if all near holes zero
-	sum := 0
+	// end of game if all holes on either side zero
+	near := 0
 	for _, v := range p.near().holes() {
-		sum += v
+		near += v
 	}
-	return sum == 0
+	far := 0
+	for _, v := range p.far().holes() {
+		far += v
+	}
+	return (near == 0 || far == 0)
 }
 
 // IsSteal determines if last position is a steal
