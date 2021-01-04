@@ -10,22 +10,25 @@ The initial console game which simply implements the rules.
 ### build
 
 ```
+go mod download
 cd cmd/mconsole
 go build
 ```
 
 ### run
 
-For a standard game with a repl
+For a standard game with a console
 
 ```
-mconsole -r
+mconsole
 ```
 
 #### options
 
 * --width to change the width of the board from the usual 6.
 * --stones to change the initial number of stones from the usual 4.
+* --type <console|random> to change player type
+* --repl to enter a repl (deprecated in favour of console player type)
 
 ### playing
 
