@@ -3,6 +3,7 @@ package game
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -60,9 +61,37 @@ func CreatePosition(vals ...int) (p *Position) {
 		r := i / (WIDTH() + 1)
 		c := i % (WIDTH() + 1)
 		p.Row[r%2].Items[c] = v
-		fmt.Printf("%d => (%d, %d)\n", i, r, c)
 	}
 	return
+}
+
+// CreatePositionCsv creates and initialise a position
+// values supplied as a csv
+func CreatePositionCsv(csv string) (p *Position) {
+	bar0 := make([]int, WIDTH()+1)
+	bar1 := make([]int, WIDTH()+1)
+	p = &Position{}
+	p.Row[0] = Side{Items: bar0}
+	p.Row[1] = Side{Items: bar1}
+	for i, s := range strings.Split(csv, ",") {
+		r := i / (WIDTH() + 1)
+		c := i % (WIDTH() + 1)
+		if v, err := strconv.Atoi(s); err == nil {
+			p.Row[r%2].Items[c] = v
+		}
+	}
+	return
+}
+
+// AsCsv returns a string representation of a Position
+func (p *Position) AsCsv() string {
+	var s []string
+	for r := range []int{0, 1} {
+		for i := 0; i < WIDTH()+1; i++ {
+			s = append(s, strconv.Itoa(p.Row[r].Items[i]))
+		}
+	}
+	return strings.Join(s, ",")
 }
 
 // near is a convenience helper

@@ -41,3 +41,17 @@ func TestNearFar(t *testing.T) {
 	assert.True(cmp.Equal(n, p.near()))
 	assert.True(cmp.Equal(f, p.far()))
 }
+
+func TestCsv(t *testing.T) {
+	assert := assert.New(t)
+	DefineGame(3, 4)
+
+	p := CreatePosition(1, 3, 5, 7, 2, 4, 6, 8)
+	s := p.AsCsv()
+	assert.Equal(s, "1,3,5,7,2,4,6,8")
+
+	clone := CreatePositionCsv(s)
+	assert.False(p == clone)
+	assert.Equal(p, clone)
+	assert.True(cmp.Equal(p, clone))
+}
