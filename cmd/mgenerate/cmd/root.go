@@ -47,11 +47,15 @@ mgenerate --width <width> --stones <start stones> --file <filename>`,
 			set[createKey(p, m)] = false
 		}
 
-		file, err := os.Create(filename)
-		if err != nil {
-			return
+		var file *os.File
+		if filename != "" {
+			var err error
+			file, err = os.Create(filename)
+			if err != nil {
+				return
+			}
+			defer file.Close()
 		}
-		defer file.Close()
 
 		count := 0
 
@@ -66,7 +70,9 @@ mgenerate --width <width> --stones <start stones> --file <filename>`,
 				move, _ := strconv.Atoi(s[1])
 				moves := p.ValidMoves()
 				e, _, result, _ := p.Move(move)
-				writeLine(file, p, moves, move, result, e)
+				if file != nil {
+					writeLine(file, p, moves, move, result, e)
+				}
 				set[k] = true
 				count = count + 1
 				fmt.Printf("\r%d", count)
@@ -107,9 +113,9 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().IntVarP(&width, "width", "w", 6, "width of board")
-	rootCmd.Flags().IntVarP(&stones, "stones", "s", 4, "intial number of stones")
-	rootCmd.Flags().StringVarP(&filename, "filename", "f", "output.txt", "filename")
+	rootCmd.Flags().IntVarP(&width, "width", "w", 3, "width of board")
+	rootCmd.Flags().IntVarP(&stones, "stones", "s", 2, "intial number of stones")
+	rootCmd.Flags().StringVarP(&filename, "filename", "f", "", "position filename to generate")
 
 	viper.BindPFlag("game.width", rootCmd.Flags().Lookup("width"))
 	viper.BindPFlag("game.stones", rootCmd.Flags().Lookup("stones"))
